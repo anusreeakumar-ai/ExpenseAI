@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🤖 Expense AI Assistant</title>
+    <style>
+        /* Chat container */
+        .chat-container {
+            max-width: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        /* Chat box */
+        #chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+
+        #chat-box p {
+            margin: 5px 0;
+        }
+
+        /* Quick buttons */
+        .quick-buttons button {
+            margin: 5px;
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .quick-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        /* Input area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .input-area button {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: none;
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+        }
+
+        .input-area button:hover {
+            background-color: #0b7dda;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h2>🤖 Expense AI Assistant</h2>
+
+    <div id="chat-box"></div>
+
+    <div class="quick-buttons">
+        <button onclick="quickMessage('How can I save money?')">💡 Saving Tips</button>
+        <button onclick="quickMessage('Budget planning advice')">📊 Budget</button>
+        <button onclick="quickMessage('How to reduce unnecessary expenses?')">📉 Reduce Expense</button>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Ask something...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <br>
+    <a href="{{ url_for('dashboard') }}">⬅ Back to Dashboard</a>
+</div>
+
+<script>
+    const chatBox = document.getElementById("chat-box");
+    const input = document.getElementById("user-input");
+
+    async function sendMessage(message = null) {
+        const userMessage = message || input.value.trim();
+        if (!userMessage) return;
+
+        chatBox.innerHTML += `<p><strong>You:</strong> ${userMessage}</p>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        if (!message) input.value = "";
+
+        try {
+            const response = await fetch("/ask_ai", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({message: userMessage})
+            });
+
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                chatBox.innerHTML += `<p style="color:red;"><strong>Bot Error (HTML received):</strong> ${text}</p>`;
+                return;
+            }
+
+            const data = await response.json();
+            chatBox.innerHTML += `<p><strong>Bot:</strong> ${data.response}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (err) {
+            chatBox.innerHTML += `<p style="color:red;"><strong>Bot Error:</strong> ${err}</p>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }
+
+    function quickMessage(msg) {
+        sendMessage(msg);
+    }
+
+    // Optional: send message on Enter key
+    input.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>

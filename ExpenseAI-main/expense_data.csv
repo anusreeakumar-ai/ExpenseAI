@@ -1,0 +1,22 @@
+item,category
+milk,Food
+banana,Food
+rice,Food
+potato,Food
+tomato,Food
+bread,Food
+apple,Food
+bus ticket,Travel
+train ticket,Travel
+uber ride,Travel
+petrol,Travel
+electricity bill,Utilities
+water bill,Utilities
+mobile recharge,Utilities
+internet bill,Utilities
+soap,Personal Care
+shampoo,Personal Care
+toothpaste,Personal Care
+shirt,Shopping
+pants,Shopping
+shoes,Shopping

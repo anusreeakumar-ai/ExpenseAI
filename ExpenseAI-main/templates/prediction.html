@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block title %}AI Expense Prediction{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>AI Expense Prediction</h1>
+    <p>Forecast & Budget Optimization</p>
+</div>
+
+<div class="card chart-card full-width" style="height:400px;">
+    <h3> Regression Forecast (Next 7 Days)</h3>
+    <canvas id="predictionChart"></canvas>
+</div>
+
+<div class="card full-width" style="margin-top:20px;">
+    <h3>Budget Focus Area</h3>
+    <h2 id="focusArea"></h2>
+</div>
+<div class="card full-width" style="margin-top:20px;">
+    <h3>AI Suggestion</h3>
+    <p id="suggestionText"></p>
+</div>
+<div class="card full-width" style="margin-top:20px;">
+    <h3>Prediction Reason</h3>
+    <p id="reasonText"></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+fetch("/expense_summary")
+.then(response => response.json())
+.then(data => {
+    console.log(data);
+
+    document.getElementById("focusArea").innerText =
+        "Focus on reducing spending in: " + data.focus_category;
+
+    document.getElementById("suggestionText").innerText =
+        data.suggestion;
+    document.getElementById("reasonText").innerText =
+    data.reason;
+    const ctx = document.getElementById('predictionChart');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [...data.past_dates, ...data.prediction_dates],
+            datasets: [
+                {
+                    label: 'Past Spending',
+                    data: [...data.past_values, ...Array(data.prediction_values.length).fill(null)],
+                    borderWidth: 3,
+                    tension: 0.4
+                },
+                {
+                    label: 'Predicted Spending',
+                    data: [...Array(data.past_values.length).fill(null), ...data.prediction_values],
+                    borderDash: [5,5],
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Bill</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dashboard-body">
+
+<div class="content">
+
+    <h2>Bill Details</h2>
+
+    <div class="bill-view-card">
+        <img src="/bill/{{ bill.image_path }}" class="bill-full-img">
+
+        <div class="bill-meta">
+            <p><strong>Category:</strong> {{ bill.category }}</p>
+            <p><strong>Date:</strong> {{ bill.bill_date }}</p>
+        </div>
+
+        <div class="bill-actions">
+            <a href="/bills" class="primary">Back</a>
+
+            <a href="/delete-bill/{{ bill.id }}"
+               class="delete-btn"
+               onclick="return confirm('Delete this bill?')">
+               Delete Bill
+            </a>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="dashboard-body">
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo-section">
+            <h2 class="logo">💰 SpendSense</h2>
+            <p class="tagline">Smart Expense Tracker</p>
+        </div>
+
+        <nav class="nav-links">
+            <a href="/dashboard" class="nav-item">
+                <span>🏠</span> <span>Dashboard</span>
+            </a>
+
+            <a href="/profile" class="nav-item">
+                <span>👤</span> <span>Profile</span>
+            </a>
+
+            <a href="/add-expense" class="nav-item">
+                <span>➕</span> <span>Add Expense</span>
+            </a>
+
+            <a href="/expenses" class="nav-item">
+                <span>📊</span> <span>View Expenses</span>
+            </a>
+
+            <a href="/add-bill" class="nav-item">
+                <span>🧾</span> <span>Add Bill</span>
+            </a>
+
+            <a href="/bills" class="nav-item">
+                <span>📁</span> <span>View Bills</span>
+            </a>
+            <a href="/prediction"
+               class="nav-item {% if request.path == '/prediction' %}active{% endif %}">
+               <span>📈</span> <span>Prediction</span>
+            </a>
+            <a href="{{ url_for('settings') }}" class="nav-item">
+                <span>⚙️</span> <span>Settings</span>
+            </a>
+            <a href="{{ url_for('chatbot') }}"
+               class="nav-item {% if request.path == '/chatbot' %}active{% endif %}">
+                <span>🤖</span> <span>AI Assistant</span>
+            </a>
+            <a href="/offers" class="nav-item">
+                <span>🌟</span> <span>offers</span>
+            </a>
+        </nav>
+
+        <div class="logout-section">
+            <a href="/logout" class="logout-btn">🚪 Logout</a>
+        </div>
+    </aside>
+
+    <!-- PAGE CONTENT -->
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+</div>
+
+</body>
+</html>

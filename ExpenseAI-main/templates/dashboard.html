@@ -1,0 +1,314 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+        <h1>Dashboard</h1>
+        <p class="subtitle">Manage your expenses smartly</p>
+        <!-- WELCOME -->
+        <div class="welcome">
+            <h2>👋 Welcome back</h2>
+            <p>Here’s your financial snapshot</p>
+        </div>
+        {% if alert_level == "100" %}
+            <div style="background:#ff4d4d; padding:15px; border-radius:8px; margin-bottom:15px;">
+                🚨 You have exceeded your daily limit!
+            </div>
+
+        {% elif alert_level == "50" %}
+            <div style="background:#ffa500; padding:15px; border-radius:8px; margin-bottom:15px;">
+                ⚠️ You have used more than 50% of your daily limit.
+            </div>
+
+        {% elif alert_level == "25" %}
+            <div style="background:#ffd700; padding:15px; border-radius:8px; margin-bottom:15px;">
+                ⚠️ You have used 25% of your daily limit.
+            </div>
+        {% endif %}
+    
+        <div style="margin-top:40px;">
+            <h3>AI Financial Assistant</h3>
+
+            <div id="chatbox" style="height:250px;overflow:auto;border:1px solid #ccc;padding:10px;"></div>
+
+            <input type="text" id="userInput" placeholder="Ask something..." style="width:70%;">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+         <!-- STATS CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>Total Spent</p>
+                <h2>₹ {{ total_spent or 0 }}</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>This Month</p>
+                <h2>₹ {{ month_spent or 0 }}</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Avg / Day</p>
+                <h2>₹ {{ avg_daily or 0 }}</h2>
+            </div>
+
+            <div class="stat-card">
+                <p>Expenses</p>
+                <h2>{{ expense_count or 0 }}</h2>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Monthly Spending</h3>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Category Split</h3>
+                <canvas id="categoryChart" width="300" height="300"></canvas>
+
+            </div>
+        </div>
+
+        <!-- RECENT EXPENSES -->
+        <div class="card">
+            <h3>Recent Expenses</h3>
+            <table class="modern-table">
+                <tr>
+                    <th>Item</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                </tr>
+                {% for exp in expenses[:5] %}
+                <tr>
+                    <td>{{ exp.item }}</td>
+                    <td>₹{{ exp.amount }}</td>
+                    <td>{{ exp.date }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+
+       <!-- SUMMARY CARDS -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>₹ {{ total_spent or 0}}</h3>
+                <p>Total Spent</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>{{ expense_count or 0 }}</h3>
+                <p>Expenses Added</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>{{ top_category or "—" }}</h3>
+                <p>Top Category</p>
+            </div>
+        </div>
+
+        <!-- ADD EXPENSE -->
+        <div id="addExpense" class="section hidden card">
+            <h3>Add Expense</h3>
+            <form method="POST" action="/add_expense">
+                <input type="text" name="item" placeholder="Item" required>
+                <input type="number" name="amount" step="0.01" placeholder="Amount" required>
+                <input type="text" name="category" placeholder="Category" required>
+                <button class="primary">Add Expense</button>
+            </form>
+        </div>
+
+        <!-- VIEW EXPENSE -->
+        <div id="viewExpense" class="section hidden card">
+            <h3>Your Expenses</h3>
+            <table>
+                <tr>
+                    <th>Item</th><th>Amount</th><th>Category</th><th>Date</th><th>Action</th>
+                </tr>
+                {% for exp in expenses %}
+                <tr>
+                    <td>{{ exp.item }}</td>
+                    <td>₹{{ exp.amount }}</td>
+                    <td>{{ exp.category }}</td>
+                    <td>{{ exp.date }}</td>
+                    <td>
+                        <a href="/edit_expense/{{ exp.id }}">✏️</a>
+                        <a href="/delete_expense/{{ exp.id }}" onclick="return confirm('Delete?')">🗑</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <!-- ADD BILL -->
+        <div id="addBill" class="section hidden card">
+            <h3>Add Bill</h3>
+            <form method="POST" action="/add_bill" enctype="multipart/form-data">
+                <select name="category" required>
+                    <option value="">Select Category</option>
+                    <option>Food</option>
+                    <option>Travel</option>
+                    <option>Shopping</option>
+                    <option>Bills</option>
+                </select>
+                <input type="date" name="date" required>
+                <input type="file" name="bill_image" accept="image/*" required>
+                <button class="primary">Scan & Add</button>
+            </form>
+        </div>
+
+        <!-- VIEW BILLS -->
+        <div id="viewBills" class="section hidden card">
+            <h3>Your Bills</h3>
+            <div class="bill-grid">
+                {% for bill in bills %}
+                <div class="bill-card">
+                    <img src="/bill/{{ bill.image_path.split('/')[-1] }}">
+                    <p>{{ bill.category }} | {{ bill.bill_date }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    new Chart(document.getElementById("monthlyChart"), {
+        type: "bar",
+        data: {
+            labels: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+            datasets: [{
+                data: [120, 90, 140, 70, 180, 110, 95],
+                backgroundColor: "#38bdf8",
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    new Chart(document.getElementById("categoryChart"), {
+        type: "doughnut",
+        data: {
+            labels: ["Food","Travel","Shopping","Bills"],
+            datasets: [{
+                data: [40,25,20,15],
+                backgroundColor: ["#38bdf8","#22c55e","#facc15","#f87171"]
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            cutout: "65%"
+        }
+    });
+});
+</script>
+<script>
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+}
+
+// Run on page load
+document.addEventListener("DOMContentLoaded", () => {
+    const section = window.location.hash.replace("#", "") || "home";
+    showSection(section);
+});
+
+// Run when clicking sidebar links
+window.addEventListener("hashchange", () => {
+    const section = window.location.hash.replace("#", "");
+    showSection(section);
+});
+</script>
+{% if alert_level %}
+<script>
+    let message = "";
+
+    if ("{{ alert_level }}" === "50") {
+        message = "⚠ You have used 50% of your daily limit!";
+    }
+    else if ("{{ alert_level }}" === "25") {
+        message = "⚠ Warning! 25% of daily limit used!";
+    }
+    else if ("{{ alert_level }}" === "100") {
+        message = "🚨 Daily limit exceeded!";
+    }
+
+    alert(message);
+</script>
+{% endif %}
+<div class="card mt-4">
+    <h4>📩 Paste GPay SMS</h4>
+
+    <form method="POST" action="{{ url_for('add_sms_expense') }}">
+        
+        <textarea name="sms_text" 
+                  placeholder="Paste your GPay SMS here..."
+                  rows="4" 
+                  required 
+                  style="width:100%; padding:10px;"></textarea>
+
+        <br><br>
+        <button type="submit" class="btn btn-primary">
+            Add from SMS
+        </button>
+
+    </form>
+</div>
+<script>
+function sendMessage() {
+    let message = document.getElementById("userInput").value;
+
+    fetch("/ask_gemini", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        let chatbox = document.getElementById("chatbox");
+
+        chatbox.innerHTML += "<p><b>You:</b> " + message + "</p>";
+        chatbox.innerHTML += "<p><b>Bot:</b> " + data.reply + "</p>";
+
+        document.getElementById("userInput").value = "";
+        chatbox.scrollTop = chatbox.scrollHeight;
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+}
+</script>
+
+{% endblock %}
+
+
+
+</html>
+
+

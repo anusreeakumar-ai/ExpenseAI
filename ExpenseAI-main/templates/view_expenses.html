@@ -1,0 +1,238 @@
+{% extends "layout.html" %}
+{% block title %}Expense Analytics{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h1>Expense Analytics</h1>
+    <p>Monthly Overview & Drilldown</p>
+</div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <h4>Today's Expense</h4>
+        <h2 id="todayExpense">₹ 0</h2>
+    </div>
+</div>
+<div class="analytics-container">
+
+    <!-- TOP ROW -->
+    <div class="analytics-grid">
+
+        <!-- Monthly Chart -->
+        <div class="card chart-card">
+            <h3>Monthly Expenses</h3>
+            <canvas id="monthlyChart"></canvas>
+        </div>
+
+        <!-- Category Pie -->
+        <div class="card chart-card">
+            <h3>Category Distribution</h3>
+            <canvas id="categoryPieChart"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Daily Chart -->
+    <div class="card chart-card full-width">
+        <h3 id="dailyTitle">Daily Expenses</h3>
+        <canvas id="dailyChart"></canvas>
+    </div>
+
+    <!-- Expense Table -->
+    <div class="card full-width">
+        <h3>Expense Details</h3>
+        <table class="expense-table" id="expenseTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>item</th>
+                    <th>Category</th>
+                    <th>Amount (₹)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+fetch("/expense_summary")
+.then(response => response.json())
+.then(data => {
+    const todayValue = data.today_total || 0;
+    document.getElementById("todayExpense").innerText ="₹ " + todayValue.toLocaleString();
+    const months = Object.keys(data.monthly);
+    const monthTotals = Object.values(data.monthly);
+    
+    // ======================
+    // MONTHLY CHART
+    // ======================
+    const monthlyChart = new Chart(
+        document.getElementById('monthlyChart'),
+        {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Monthly Expenses',
+                    data: monthTotals
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const selectedMonth = months[index];
+
+                        // Filter daily data for selected month
+                        const filteredDaily = {};
+
+                        Object.keys(data.daily).forEach(date => {
+                           if (date.startsWith(selectedMonth)) {
+                               filteredDaily[date] = data.daily[date];
+                            }
+                        });
+
+                        loadDailyChart(selectedMonth, filteredDaily);
+                        loadTable(data.expense_list.filter(e => 
+                            e.date.startsWith(selectedMonth)
+                        ));
+                    }
+                }
+            }
+        }
+    );
+
+    // ======================
+    // DAILY CHART
+    // ======================
+    function loadDailyChart(month, dailyData) {
+
+        const dates = Object.keys(dailyData);
+        const totals = Object.values(dailyData);
+
+        if (window.dailyChartInstance) {
+            window.dailyChartInstance.destroy();
+        }
+
+        document.getElementById("dailyTitle").innerText =
+            "Daily Expenses (" + month + ")";
+
+        window.dailyChartInstance = new Chart(
+            document.getElementById('dailyChart'),
+            {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Daily',
+                        data: totals,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            }
+        );
+    }
+
+    // ======================
+    // CATEGORY PIE
+    // ======================
+    const categories = Object.keys(data.category_totals);
+    const categoryValues = Object.values(data.category_totals);
+
+    const pieChart = new Chart(
+        document.getElementById('categoryPieChart'),
+        {
+            type: 'pie',
+            data: {
+                labels: categories,
+                datasets: [{
+                    data: categoryValues
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const selectedCategory = categories[index];
+
+                        loadTable(
+                            data.expense_list.filter(e => 
+                                e.category === selectedCategory
+                            )
+                        );
+                    }
+                }
+            }
+        }
+    );
+
+    // ======================
+    // TABLE LOADER
+    // ======================
+    function loadTable(expenses) {
+
+        const tbody = document.querySelector("#expenseTable tbody");
+        tbody.innerHTML = "";
+
+        expenses.forEach(exp => {
+            const row = `
+                <tr>
+                    <td>${exp.date}</td>
+                    <td>${exp.item}</td>
+                    <td>${exp.category}</td>
+                    <td>₹${parseFloat(exp.amount).toFixed(2)}</td>
+
+                    <td>
+                        <button onclick="editExpense(${exp.id})" class="edit-btn">
+                            Edit
+                        </button>
+
+                        <button onclick="deleteExpense(${exp.id})" class="delete-btn">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // Load all expenses initially
+    loadTable(data.expense_list);
+
+});
+function deleteExpense(id) {
+
+    if (!confirm("Delete this expense?")) return;
+
+    fetch("/delete-expense/" + id, {
+        method: "DELETE"
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();   // refresh page
+        } else {
+            alert("Delete failed");
+        }
+    });
+}
+function editExpense(id){
+    window.location.href = "/edit-expense/" + id;
+}
+</script>
+
+{% endblock %}

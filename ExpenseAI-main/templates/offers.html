@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+{% block title %}Best Offers{% endblock %}
+
+{% block content %}
+
+<h1>Find Best Product Offers</h1>
+
+<div class="offer-search">
+
+<input 
+type="text"
+id="productInput"
+placeholder="Search product (ex: shoes, iphone, laptop)"
+>
+
+<button onclick="searchOffers()">Search</button>
+
+</div>
+
+
+<!-- AI RECOMMENDATION SECTION -->
+
+<div id="aiRecommendation" class="ai-box"></div>
+
+
+<!-- OFFERS GRID -->
+
+<div id="offersResult" class="offers-grid"></div>
+
+
+<script>
+
+function searchOffers(){
+
+    const product = document.getElementById("productInput").value;
+
+    fetch("/ai-deal?product=" + encodeURIComponent(product))
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        const offers = data.offers;
+        const best = data.best;
+
+        let html = "";
+        let recommendationHTML = "";
+
+        if(offers.length === 0){
+
+            html = "<h3>No offers found</h3>";
+        }
+
+        /* AI Recommendation */
+
+        if(best){
+
+            recommendationHTML = `
+            <div class="recommend-card">
+
+                <h2>🤖 AI Best Deal Recommendation</h2>
+
+                <img src="${best.image}" width="140">
+
+                <h3>${best.title}</h3>
+
+                <p><b>Store:</b> ${best.store}</p>
+
+                <p class="best-price">Best Price: ${best.price}</p>
+
+                <p class="ai-note">
+                This is currently the lowest price across available stores.
+                </p>
+
+            </div>
+            `;
+
+        }
+
+        /* Display all offers */
+
+        offers.forEach(item => {
+
+            const highlight = item.price === best.price ? "best-offer" : "";
+
+            html += `
+            <div class="offer-card ${highlight}">
+
+                <img src="${item.image}" width="120">
+
+                <h3>${item.title}</h3>
+
+                <p><b>Price:</b> ${item.price}</p>
+
+                <p><b>Store:</b> ${item.store}</p>
+
+                ${highlight ? "<span class='best-badge'>Best Deal</span>" : ""}
+
+            </div>
+            `;
+
+        });
+
+        document.getElementById("aiRecommendation").innerHTML = recommendationHTML;
+
+        document.getElementById("offersResult").innerHTML = html;
+
+    });
+
+}
+
+</script>
+
+{% endblock %}
